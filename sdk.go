@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // checkZone servers as a check if the zone exists and returns the required data
 // (origin and nameserver to retrieve the actual zone).
 func (p *Provider) checkZone(ctx context.Context, zone string) (*ResponseSearchItem, error) {
+	zone = strings.TrimSuffix(zone, ".")
+
 	filter := map[string]string{
 		"key":      "name",
 		"operator": "EQUAL",
