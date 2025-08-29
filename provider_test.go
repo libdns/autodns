@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/libdns/autodns"
 	"github.com/stretchr/testify/assert"
@@ -16,19 +17,22 @@ import (
 func TestProvider(t *testing.T) {
 	if os.Getenv("AUTODNS_USERNAME") == "" || os.Getenv("AUTODNS_PASSWORD") == "" {
 		t.SkipNow()
+		return
 	}
 
 	provider := autodns.NewWithDefaults(os.Getenv("AUTODNS_USERNAME"), os.Getenv("AUTODNS_PASSWORD"))
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
 	t.Run("GetRecords", func(t *testing.T) {
 		if os.Getenv("TEST_ZONE") == "" {
 			t.Skip()
+			return
 		}
 
-		records, err := provider.GetRecords(context.TODO(), os.Getenv("TEST_ZONE"))
-		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
+		records, err := provider.GetRecords(ctx, os.Getenv("TEST_ZONE"))
+		assert.NoError(t, err)
 
 		if len(records) == 0 {
 			t.Fatalf("expected at least one record: %#v", records)

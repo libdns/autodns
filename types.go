@@ -206,8 +206,8 @@ func (m *AutoDNSError) Messages() []*AutoDNSMessage {
 	return m.messages
 }
 
-func NewError(resp AutoDNSResponse) *AutoDNSError {
+func NewError(messages []*AutoDNSMessage) *AutoDNSError {
 	return &AutoDNSError{
-		messages: resp.Messages,
+		messages: messages,
 	}
 }
