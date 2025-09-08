@@ -3,7 +3,7 @@ module github.com/libdns/autodns
 go 1.21
 
 require (
-	github.com/libdns/libdns v1.1.0
+	github.com/libdns/libdns v1.1.1
 	github.com/stretchr/testify v1.11.1
 )
 
