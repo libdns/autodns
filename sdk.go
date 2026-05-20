@@ -9,7 +9,7 @@ import (
 
 // checkZone servers as a check if the zone exists and returns the required data
 // (origin and nameserver to retrieve the actual zone).
-func (p *Provider) checkZone(ctx context.Context, zone string) (*ResponseSearchItem, error) {
+func (p *Provider) checkZone(ctx context.Context, zone string) (*ZoneItem, error) {
 	zone = strings.TrimSuffix(zone, ".")
 
 	filter := map[string]string{
@@ -32,7 +32,7 @@ func (p *Provider) checkZone(ctx context.Context, zone string) (*ResponseSearchI
 		return nil, err
 	}
 
-	var result ResponseSearch
+	var result ResponseZone
 	if err := p.parseResponse(resp, &result); err != nil {
 		return nil, fmt.Errorf("checkZone: %s", err)
 	}
@@ -50,9 +50,7 @@ func (p *Provider) checkZone(ctx context.Context, zone string) (*ResponseSearchI
 
 // getZone returns the zone.
 func (p *Provider) getZone(ctx context.Context, origin, nameserver, zone string) (*ResponseZone, error) {
-	req, err := p.buildRequest(ctx, http.MethodGet, p.buildURL("zone/"+origin+"/"+nameserver), RequestZone{
-		Domain: zone,
-	})
+	req, err := p.buildRequest(ctx, http.MethodGet, p.buildURL("zone/"+origin+"/"+nameserver), nil)
 	if err != nil {
 		return nil, err
 	}

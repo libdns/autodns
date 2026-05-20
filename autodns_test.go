@@ -54,24 +54,25 @@ var mockZoneResponse = autodns.ResponseZone{
 	},
 }
 
-// Mock zone records covering all supported record types
+// Mock zone records covering all supported record types.
+// AutoDNS uses an empty Name for apex records, not "@".
 var mockZoneRecords = []autodns.ZoneRecord{
-	{Name: "@", Type: "A", Value: "192.168.1.1", TTL: 3600},
+	{Name: "", Type: "A", Value: "192.168.1.1", TTL: 3600},
 	{Name: "www", Type: "A", Value: "192.168.1.2", TTL: 3600},
 	{Name: "ipv6", Type: "AAAA", Value: "2001:db8::1", TTL: 3600},
 	{Name: "mail", Type: "CNAME", Value: "mailserver.example.org", TTL: 3600},
-	{Name: "@", Type: "MX", Pref: ptr(10), Value: "mail.example.org", TTL: 3600},
-	{Name: "@", Type: "MX", Pref: ptr(20), Value: "backup.example.org", TTL: 3600},
-	{Name: "@", Type: "NS", Value: "ns1.example.org", TTL: 86400},
-	{Name: "@", Type: "NS", Value: "ns2.example.org", TTL: 86400},
+	{Name: "", Type: "MX", Pref: ptr(10), Value: "mail.example.org", TTL: 3600},
+	{Name: "", Type: "MX", Pref: ptr(20), Value: "backup.example.org", TTL: 3600},
+	{Name: "", Type: "NS", Value: "ns1.example.org", TTL: 86400},
+	{Name: "", Type: "NS", Value: "ns2.example.org", TTL: 86400},
 	{Name: "_sip._tcp", Type: "SRV", Value: "10 5 5060 sipserver.example.org", TTL: 3600},
-	{Name: "@", Type: "TXT", Value: "v=spf1 include:_spf.example.org ~all", TTL: 3600},
+	{Name: "", Type: "TXT", Value: "v=spf1 include:_spf.example.org ~all", TTL: 3600},
 	{Name: "test", Type: "TXT", Value: "test-verification-string", TTL: 300},
 	{Name: "custom", Type: "CAA", Value: "0 issue \"letsencrypt.org\"", TTL: 86400},
 }
 
 // Mock search response for zone lookup
-var mockSearchResponse = autodns.ResponseSearch{
+var mockSearchResponse = autodns.ResponseZone{
 	AutoDNSResponse: autodns.AutoDNSResponse{
 		STID: "test-search-stid-67890",
 		Status: struct {
@@ -84,7 +85,7 @@ var mockSearchResponse = autodns.ResponseSearch{
 			Text: ptr("Search successful"),
 		},
 	},
-	Data: []autodns.ResponseSearchItem{
+	Data: []autodns.ZoneItem{
 		{
 			Created:    "2023-10-18T13:56:47.000+0200",
 			Updated:    "2024-10-25T13:16:43.000+0200",

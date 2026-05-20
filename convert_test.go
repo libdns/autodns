@@ -20,9 +20,9 @@ func TestConversion(t *testing.T) {
 		}{
 			{
 				name:  "A record",
-				input: mockZoneRecords[0], // "@", "A", "192.168.1.1"
+				input: mockZoneRecords[0], // "", "A", "192.168.1.1"
 				expected: &libdns.Address{
-					Name: "@",
+					Name: "",
 					IP:   netip.MustParseAddr("192.168.1.1"),
 					TTL:  3600 * time.Second,
 				},
@@ -47,9 +47,9 @@ func TestConversion(t *testing.T) {
 			},
 			{
 				name:  "MX record",
-				input: mockZoneRecords[4], // "@", "MX", "10 mail.example.org"
+				input: mockZoneRecords[4], // "", "MX", pref=10, "mail.example.org"
 				expected: &libdns.MX{
-					Name:       "@",
+					Name:       "",
 					Preference: 10,
 					Target:     "mail.example.org",
 					TTL:        3600 * time.Second,
@@ -57,9 +57,9 @@ func TestConversion(t *testing.T) {
 			},
 			{
 				name:  "NS record",
-				input: mockZoneRecords[6], // "@", "NS", "ns1.example.org"
+				input: mockZoneRecords[6], // "", "NS", "ns1.example.org"
 				expected: &libdns.NS{
-					Name:   "@",
+					Name:   "",
 					Target: "ns1.example.org",
 					TTL:    86400 * time.Second,
 				},
@@ -78,9 +78,9 @@ func TestConversion(t *testing.T) {
 			},
 			{
 				name:  "TXT record",
-				input: mockZoneRecords[9], // "@", "TXT", "v=spf1 include:_spf.example.org ~all"
+				input: mockZoneRecords[9], // "", "TXT", "v=spf1 include:_spf.example.org ~all"
 				expected: &libdns.TXT{
-					Name: "@",
+					Name: "",
 					Text: "v=spf1 include:_spf.example.org ~all",
 					TTL:  3600 * time.Second,
 				},
