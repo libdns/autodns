@@ -1,6 +1,9 @@
 package autodns
 
-import "github.com/libdns/libdns"
+import (
+	"github.com/libdns/autodns/sdk"
+	"github.com/libdns/libdns"
+)
 
 func HasRecord(name, rrType string, records []libdns.Record) bool {
 	for _, record := range records {
@@ -11,7 +14,7 @@ func HasRecord(name, rrType string, records []libdns.Record) bool {
 	return false
 }
 
-func HasWWWInclude(zone ZoneItem) bool {
+func HasWWWInclude(zone sdk.ZoneItem) bool {
 	if zone.WWWInclude && zone.Main.Address != nil {
 		return true
 	}

@@ -1,4 +1,4 @@
-package autodns
+package sdk
 
 import (
 	"context"
@@ -7,9 +7,17 @@ import (
 	"strings"
 )
 
-// checkZone servers as a check if the zone exists and returns the required data
-// (origin and nameserver to retrieve the actual zone).
-func (p *Provider) checkZone(ctx context.Context, zone string) (*ZoneItem, error) {
+type SDK struct {
+	Username   string
+	Password   string
+	Endpoint   string
+	Context    string
+	HttpClient *http.Client
+}
+
+// CheckZone verifies that the zone exists and returns the data required
+// (origin and nameserver) to fetch the full zone via GetZone.
+func (s *SDK) CheckZone(ctx context.Context, zone string) (*ZoneItem, error) {
 	zone = strings.TrimSuffix(zone, ".")
 
 	filter := map[string]string{
@@ -22,18 +30,18 @@ func (p *Provider) checkZone(ctx context.Context, zone string) (*ZoneItem, error
 	payload["filters"] = make([]map[string]string, 0)
 	payload["filters"] = append(payload["filters"], filter)
 
-	req, err := p.buildRequest(ctx, http.MethodPost, p.buildURL("zone/_search"), payload)
+	req, err := s.buildRequest(ctx, http.MethodPost, s.buildURL("zone/_search"), payload)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := p.makeRequest(req)
+	resp, err := s.makeRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
 	var result ResponseZone
-	if err := p.parseResponse(resp, &result); err != nil {
+	if err := s.parseResponse(resp, &result); err != nil {
 		return nil, fmt.Errorf("checkZone: %s", err)
 	}
 
@@ -48,20 +56,20 @@ func (p *Provider) checkZone(ctx context.Context, zone string) (*ZoneItem, error
 	return &result.Data[0], nil
 }
 
-// getZone returns the zone.
-func (p *Provider) getZone(ctx context.Context, origin, nameserver, zone string) (*ResponseZone, error) {
-	req, err := p.buildRequest(ctx, http.MethodGet, p.buildURL("zone/"+origin+"/"+nameserver), nil)
+// GetZone returns the zone.
+func (s *SDK) GetZone(ctx context.Context, origin, nameserver, zone string) (*ResponseZone, error) {
+	req, err := s.buildRequest(ctx, http.MethodGet, s.buildURL("zone/"+origin+"/"+nameserver), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := p.makeRequest(req)
+	resp, err := s.makeRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
 	var result ResponseZone
-	if err := p.parseResponse(resp, &result); err != nil {
+	if err := s.parseResponse(resp, &result); err != nil {
 		return nil, fmt.Errorf("getZone: %s", err)
 	}
 
@@ -80,20 +88,20 @@ func (p *Provider) getZone(ctx context.Context, origin, nameserver, zone string)
 	return &result, nil
 }
 
-// updateZone updates the zone.
-func (p *Provider) updateZone(ctx context.Context, origin, nameserver string, zone ZoneItem) error {
-	req, err := p.buildRequest(ctx, http.MethodPut, p.buildURL("zone/"+origin+"/"+nameserver), zone)
+// UpdateZone updates the zone.
+func (s *SDK) UpdateZone(ctx context.Context, origin, nameserver string, zone ZoneItem) error {
+	req, err := s.buildRequest(ctx, http.MethodPut, s.buildURL("zone/"+origin+"/"+nameserver), zone)
 	if err != nil {
 		return err
 	}
 
-	resp, err := p.makeRequest(req)
+	resp, err := s.makeRequest(req)
 	if err != nil {
 		return err
 	}
 
 	var result AutoDNSResponse
-	if err := p.parseResponse(resp, &result); err != nil {
+	if err := s.parseResponse(resp, &result); err != nil {
 		return fmt.Errorf("updateZone: %s", err)
 	}
 

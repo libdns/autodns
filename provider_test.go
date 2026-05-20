@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/libdns/autodns"
+	"github.com/libdns/autodns/sdk"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,14 +64,15 @@ func TestGetRecords(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	provicer := autodns.Provider{
+	provider := autodns.NewWithSDK(&sdk.SDK{
 		Username: "doesn't-matter",
 		Password: "doesn't matter",
 		Context:  "23",
 		Endpoint: ts.URL,
-	}
+	},
+	)
 
-	records, err := provicer.GetRecords(context.TODO(), "example.org")
+	records, err := provider.GetRecords(context.TODO(), "example.org")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, records)
 }

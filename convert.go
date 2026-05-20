@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/libdns/autodns/sdk"
 	"github.com/libdns/libdns"
 )
 
 // ToLibDNS converts an AutoDNS ZoneRecord to a libdns Record
-func ToLibDNS(zr ZoneRecord) (libdns.Record, error) {
+func ToLibDNS(zr sdk.ZoneRecord) (libdns.Record, error) {
 	switch strings.ToUpper(zr.Type) {
 	case "A", "AAAA":
 		ip, err := netip.ParseAddr(zr.Value)
@@ -90,28 +91,28 @@ func ToLibDNS(zr ZoneRecord) (libdns.Record, error) {
 }
 
 // ToAutoDNS converts a libdns Record to an AutoDNS ZoneRecord
-func ToAutoDNS(record libdns.Record) (ZoneRecord, error) {
+func ToAutoDNS(record libdns.Record) (sdk.ZoneRecord, error) {
 	switch r := record.(type) {
 	case *libdns.Address:
 		recordType := "A"
 		if r.IP.Is6() {
 			recordType = "AAAA"
 		}
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  r.Name,
 			Type:  recordType,
 			Value: r.IP.String(),
 			TTL:   int(r.TTL.Seconds()),
 		}, nil
 	case *libdns.CNAME:
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  r.Name,
 			Type:  "CNAME",
 			Value: r.Target,
 			TTL:   int(r.TTL.Seconds()),
 		}, nil
 	case *libdns.TXT:
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  r.Name,
 			Type:  "TXT",
 			Value: r.Text,
@@ -119,7 +120,7 @@ func ToAutoDNS(record libdns.Record) (ZoneRecord, error) {
 		}, nil
 	case *libdns.MX:
 		pref := int(r.Preference)
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  r.Name,
 			Type:  "MX",
 			Value: r.Target,
@@ -127,21 +128,21 @@ func ToAutoDNS(record libdns.Record) (ZoneRecord, error) {
 			TTL:   int(r.TTL.Seconds()),
 		}, nil
 	case *libdns.NS:
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  r.Name,
 			Type:  "NS",
 			Value: r.Target,
 			TTL:   int(r.TTL.Seconds()),
 		}, nil
 	case *libdns.SRV:
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  r.Name,
 			Type:  "SRV",
 			Value: fmt.Sprintf("%d %d %d %s", r.Priority, r.Weight, r.Port, r.Target),
 			TTL:   int(r.TTL.Seconds()),
 		}, nil
 	case *libdns.RR:
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  r.Name,
 			Type:  r.Type,
 			Value: r.Data,
@@ -150,7 +151,7 @@ func ToAutoDNS(record libdns.Record) (ZoneRecord, error) {
 	default:
 		// Fallback: try to get the RR representation
 		rr := record.RR()
-		return ZoneRecord{
+		return sdk.ZoneRecord{
 			Name:  rr.Name,
 			Type:  rr.Type,
 			Value: rr.Data,

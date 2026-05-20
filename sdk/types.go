@@ -1,4 +1,4 @@
-package autodns
+package sdk
 
 import (
 	"encoding/json"
@@ -7,16 +7,30 @@ import (
 	"strings"
 )
 
+const (
+	autoDNSendpoint string = "https://api.autodns.com/v1"
+	autoDNScontext  string = "4"
+)
+
+// AutoDNSObject is a generic reference to an entity in the AutoDNS API
+// (a zone, domain, contact, etc.). It appears as the top-level `object`
+// field on a response and inside AutoDNSMessage to identify what an
+// error or status message refers to.
 type AutoDNSObject struct {
 	Type  string `json:"type"`
 	Value string `json:"value"`
 }
 
+// AutoDNSUser identifies an AutoDNS account by its numeric context and
+// user name. It appears as the owner and updater on a zone.
 type AutoDNSUser struct {
 	Context int32  `json:"context"`
 	User    string `json:"user"`
 }
 
+// AutoDNSMessage is a single status or error message returned by the API.
+// A response may carry multiple messages; Code and Text describe what
+// happened and Objects lists the entities the message refers to.
 type AutoDNSMessage struct {
 	Text    string          `json:"text"`
 	Objects []AutoDNSObject `json:"objects"`
@@ -24,14 +38,22 @@ type AutoDNSMessage struct {
 	Status  string          `json:"status"`
 }
 
+// ResponseStatus is the status block on an AutoDNSResponse. Type is
+// "SUCCESS" on success and "ERROR" on failure; Code and Text carry
+// optional per-status details.
+type ResponseStatus struct {
+	Type string  `json:"type"`
+	Code *string `json:"code,omitempty"`
+	Text *string `json:"text,omitempty"`
+}
+
+// AutoDNSResponse is the envelope returned by every AutoDNS endpoint.
+// Status.Type is "SUCCESS" on success and "ERROR" on failure; Messages
+// carries the error details in the latter case.
 type AutoDNSResponse struct {
 	STID string `json:"stid"`
 
-	Status struct {
-		Type string  `json:"type"`
-		Code *string `json:"code,omitempty"`
-		Text *string `json:"text,omitempty"`
-	} `json:"status"`
+	Status ResponseStatus `json:"status"`
 
 	Object *AutoDNSObject `json:"object,omitempty"`
 
@@ -39,6 +61,11 @@ type AutoDNSResponse struct {
 	Messages []*AutoDNSMessage `json:"messages,omitempty"`
 }
 
+// ResponseZone is an AutoDNSResponse whose Data field carries one or more
+// zones. It is returned by /zone/_search (search hits, with SOA and
+// resourceRecords omitted) and by GET /zone/{name}/{ns} (a single, full
+// zone).
+//
 // Example payload returned for a /zone/_search hit (search results omit
 // resourceRecords and SOA; full zone fields appear via GET /zone/{name}/{ns}).
 //
@@ -118,6 +145,9 @@ type ResponseZone struct {
 //
 // ]
 
+// ZoneRecord is a single DNS resource record stored inside a zone. Pref
+// is only meaningful for record types that carry a preference (MX); it
+// is nil for everything else.
 type ZoneRecord struct {
 	Name  string `json:"name"`
 	Type  string `json:"type"`
@@ -126,18 +156,30 @@ type ZoneRecord struct {
 	TTL   int    `json:"ttl"`
 }
 
+// ZoneSOA is the SOA block on a ZoneItem.
+type ZoneSOA struct {
+	Refresh int    `json:"refresh"`
+	Retry   int    `json:"retry"`
+	Expire  int    `json:"expire"`
+	TTL     int    `json:"ttl"`
+	Email   string `json:"email"`
+}
+
+// ZoneNameserver is a single entry in ZoneItem.Nameservers — the list of
+// authoritative nameservers AutoDNS reports for the zone.
+type ZoneNameserver struct {
+	Name string `json:"name"`
+}
+
+// ZoneItem is a full AutoDNS zone: SOA, nameservers, the resource
+// record set, and the AutoDNS-specific Main and WWWInclude shortcuts
+// for the apex (and optional www) A record.
 type ZoneItem struct {
 	Created string `json:"created"`
 	Updated string `json:"updated"`
 	Origin  string `json:"origin"`
 
-	SOA struct {
-		Refresh int    `json:"refresh"`
-		Retry   int    `json:"retry"`
-		Expire  int    `json:"expire"`
-		TTL     int    `json:"ttl"`
-		Email   string `json:"email"`
-	} `json:"soa"`
+	SOA ZoneSOA `json:"soa"`
 
 	NSGroup    string      `json:"nameServerGroup"`
 	Owner      AutoDNSUser `json:"owner"`
@@ -145,9 +187,7 @@ type ZoneItem struct {
 	DomainSafe bool        `json:"domainsafe"`
 	PurgeType  string      `json:"purgeType"`
 
-	Nameservers []struct {
-		Name string `json:"name"`
-	} `json:"nameServers"`
+	Nameservers []ZoneNameserver `json:"nameServers"`
 
 	Main ZoneItemMain `json:"main"`
 
@@ -161,6 +201,11 @@ type ZoneItem struct {
 	ROID int `json:"roid"`
 }
 
+// ZoneItemMain is the apex IP shortcut on a zone. When Address is set,
+// AutoDNS auto-creates an A record at the zone apex; if the zone's
+// WWWInclude is also true, `www` gets the same A record. Neither of
+// these records appears in ZoneItem.Records — to change or remove them,
+// mutate Address (and WWWInclude) directly and call UpdateZone.
 type ZoneItemMain struct {
 	// the default IP address to be used, e.g. for an A-record for the domain)
 	Address *netip.Addr `json:"address"`
@@ -218,6 +263,9 @@ func (m *ZoneItem) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// AutoDNSError is the typed error returned by the SDK when the API
+// reports a failure (Status.Type == "ERROR"). Use errors.As to detect
+// it and Messages to inspect the per-message details.
 type AutoDNSError struct {
 	messages []*AutoDNSMessage
 }

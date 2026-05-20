@@ -1,4 +1,4 @@
-package autodns
+package sdk
 
 import (
 	"bytes"
@@ -10,8 +10,8 @@ import (
 )
 
 // buildRequest prepares the request with authentication headers and optional payload
-func (p *Provider) buildRequest(ctx context.Context, method, url string, payload any) (req *http.Request, err error) {
-	if p.Username == "" || p.Password == "" {
+func (s *SDK) buildRequest(ctx context.Context, method, url string, payload any) (req *http.Request, err error) {
+	if s.Username == "" || s.Password == "" {
 		err = fmt.Errorf("missing username and/or password")
 		return
 	}
@@ -32,37 +32,37 @@ func (p *Provider) buildRequest(ctx context.Context, method, url string, payload
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	req.Header.Set("X-Domainrobot-Context", p.getAutoDNSContext())
+	req.Header.Set("X-Domainrobot-Context", s.getAutoDNSContext())
 	req.Header.Set("User-Agent", "libdns-autodns/x.y (+https://github.com/libdns/autodns)")
-	req.SetBasicAuth(p.Username, p.Password)
+	req.SetBasicAuth(s.Username, s.Password)
 	return
 }
 
 // buildURL prepends the endpoint to the requested API URL.
-func (p *Provider) buildURL(path string) string {
-	if p.Endpoint == "" {
+func (s *SDK) buildURL(path string) string {
+	if s.Endpoint == "" {
 		return autoDNSendpoint + "/" + path
 	}
 
-	return p.Endpoint + "/" + path
+	return s.Endpoint + "/" + path
 }
 
 // getAutoDNSContext returns the provider / API context of the account.
-func (p *Provider) getAutoDNSContext() string {
-	if p.Context == "" {
+func (s *SDK) getAutoDNSContext() string {
+	if s.Context == "" {
 		return autoDNScontext
 	}
 
-	return p.Context
+	return s.Context
 }
 
 // makeRequest executes the request.
-func (p *Provider) makeRequest(req *http.Request) (*http.Response, error) {
+func (s *SDK) makeRequest(req *http.Request) (*http.Response, error) {
 	var client *http.Client
-	if p.HttpClient == nil {
+	if s.HttpClient == nil {
 		client = &http.Client{}
 	} else {
-		client = p.HttpClient
+		client = s.HttpClient
 	}
 
 	resp, err := client.Do(req)
@@ -73,7 +73,7 @@ func (p *Provider) makeRequest(req *http.Request) (*http.Response, error) {
 }
 
 // parseResponse parses the response into the struct.
-func (p *Provider) parseResponse(resp *http.Response, into any) error {
+func (s *SDK) parseResponse(resp *http.Response, into any) error {
 	return json.NewDecoder(resp.Body).Decode(&into)
 }
 

@@ -5,15 +5,15 @@ import (
 	"net/netip"
 	"testing"
 
-	"github.com/libdns/autodns"
+	"github.com/libdns/autodns/sdk"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 	t.Run("Test with nil address", func(t *testing.T) {
-		zoneNil := autodns.ZoneItem{
+		zoneNil := sdk.ZoneItem{
 			Origin: "example.org",
-			Main: autodns.ZoneItemMain{
+			Main: sdk.ZoneItemMain{
 				Address: nil,
 				TTL:     3600,
 			},
@@ -23,7 +23,7 @@ func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, string(jsonData), `"address":null`)
 
-		var unmarshaled autodns.ZoneItem
+		var unmarshaled sdk.ZoneItem
 		err = json.Unmarshal(jsonData, &unmarshaled)
 		assert.NoError(t, err)
 		assert.Nil(t, unmarshaled.Main.Address)
@@ -32,9 +32,9 @@ func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 
 	t.Run("valid IPv4 address", func(t *testing.T) {
 		addr := netip.MustParseAddr("192.168.1.1")
-		zoneIPv4 := autodns.ZoneItem{
+		zoneIPv4 := sdk.ZoneItem{
 			Origin: "example.org",
-			Main: autodns.ZoneItemMain{
+			Main: sdk.ZoneItemMain{
 				Address: &addr,
 				TTL:     7200,
 			},
@@ -44,7 +44,7 @@ func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, string(jsonData), `"address":"192.168.1.1"`)
 
-		var unmarshaledIPv4 autodns.ZoneItem
+		var unmarshaledIPv4 sdk.ZoneItem
 		err = json.Unmarshal(jsonData, &unmarshaledIPv4)
 		assert.NoError(t, err)
 		assert.NotNil(t, unmarshaledIPv4.Main.Address)
@@ -54,7 +54,7 @@ func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 
 	t.Run("valid IPv6 address", func(t *testing.T) {
 		addrIPv6 := netip.MustParseAddr("2001:db8::1")
-		zoneIPv6 := autodns.ZoneItem{
+		zoneIPv6 := sdk.ZoneItem{
 			Origin: "example.org",
 			Main: struct {
 				Address *netip.Addr `json:"address"`
@@ -69,7 +69,7 @@ func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, string(jsonData), `"address":"2001:db8::1"`)
 
-		var unmarshaledIPv6 autodns.ZoneItem
+		var unmarshaledIPv6 sdk.ZoneItem
 		err = json.Unmarshal(jsonData, &unmarshaledIPv6)
 		assert.NoError(t, err)
 		assert.NotNil(t, unmarshaledIPv6.Main.Address)
@@ -79,7 +79,7 @@ func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 
 	t.Run("invalid IP address", func(t *testing.T) {
 		invalidJSON := `{"origin":"example.org","main":{"address":"invalid-ip","ttl":3600}}`
-		var invalidUnmarshaled autodns.ZoneItem
+		var invalidUnmarshaled sdk.ZoneItem
 		err := json.Unmarshal([]byte(invalidJSON), &invalidUnmarshaled)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid IP address")
@@ -87,7 +87,7 @@ func TestZoneItemJSONMarshalUnmarshal(t *testing.T) {
 
 	t.Run("empty string address (should result in nil)", func(t *testing.T) {
 		emptyJSON := `{"origin":"example.org","main":{"address":"","ttl":3600}}`
-		var emptyUnmarshaled autodns.ZoneItem
+		var emptyUnmarshaled sdk.ZoneItem
 		err := json.Unmarshal([]byte(emptyJSON), &emptyUnmarshaled)
 		assert.NoError(t, err)
 		assert.Nil(t, emptyUnmarshaled.Main.Address)
