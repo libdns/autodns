@@ -1,0 +1,109 @@
+{
+  "created": "2020-01-19T18:26:00.000+0100",
+  "updated": "2020-08-13T17:40:03.000+0200",
+  "origin": "example.org",
+  "soa": {
+    "refresh": 43200,
+    "retry": 7200,
+    "expire": 1209600,
+    "ttl": 86400,
+    "email": "dns@example.org"
+  },
+  "owner": {
+    "context": 4,
+    "user": "user"
+  },
+  "updater": {
+    "context": 4,
+    "user": "user"
+  },
+  "comment": "",
+  "domainsafe": false,
+  "purgeType": "AUTO",
+  "nameServers": [
+    {
+      "name": "a.ns14.net"
+    },
+    {
+      "name": "b.ns14.net"
+    },
+    {
+      "name": "c.ns14.net"
+    },
+    {
+      "name": "d.ns14.net"
+    }
+  ],
+  "main": {
+    "address": "1.1.1.1",
+    "ttl": 300
+  },
+  "wwwInclude": true,
+  "virtualNameServer": "a.ns14.net",
+  "action": "COMPLETE",
+  "resourceRecords": [
+    {
+      "name": "*",
+      "ttl": 300,
+      "type": "A",
+      "value": "1.1.1.1"
+    },
+    {
+      "name": "imap",
+      "ttl": 300,
+      "type": "CNAME",
+      "value": "mail"
+    },
+    {
+      "name": "lists",
+      "ttl": 300,
+      "type": "CNAME",
+      "value": "mail"
+    },
+    {
+      "name": "mail",
+      "ttl": 300,
+      "type": "A",
+      "value": "82.165.154.93"
+    },
+    {
+      "name": "mail",
+      "ttl": 300,
+      "type": "MX",
+      "value": "netzmacherpost.de.",
+      "pref": 50
+    },
+    {
+      "name": "newsletter",
+      "ttl": 300,
+      "type": "A",
+      "value": "2.2.2.2"
+    },
+    {
+      "name": "",
+      "ttl": 300,
+      "type": "MX",
+      "value": "mail",
+      "pref": 50
+    },
+    {
+      "name": "pop",
+      "ttl": 300,
+      "type": "CNAME",
+      "value": "mail"
+    },
+    {
+      "name": "pop3",
+      "ttl": 300,
+      "type": "CNAME",
+      "value": "mail"
+    },
+    {
+      "name": "smtp",
+      "ttl": 300,
+      "type": "CNAME",
+      "value": "mail"
+    }
+  ],
+  "roid": 8115080
+}

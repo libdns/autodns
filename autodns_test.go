@@ -20,8 +20,8 @@ var mockZoneResponse = autodns.ResponseZone{
 			Text *string `json:"text,omitempty"`
 		}{
 			Type: "SUCCESS",
-			Code: stringPtr("S0301"),
-			Text: stringPtr("Operation successful"),
+			Code: ptr("S0301"),
+			Text: ptr("Operation successful"),
 		},
 	},
 	Data: []autodns.ZoneItem{
@@ -42,14 +42,14 @@ var mockZoneResponse = autodns.ResponseZone{
 				TTL:     86400,
 				Email:   "admin@example.org",
 			},
-			NSGroup:     "ns14.net",
-			DomainSafe:  false,
-			PurgeType:   "DISABLED",
-			WWWWInclude: false,
-			Nameserver:  "a.ns14.net",
-			Action:      "COMPLETE",
-			Records:     mockZoneRecords,
-			ROID:        9149383,
+			NSGroup:    "ns14.net",
+			DomainSafe: false,
+			PurgeType:  "DISABLED",
+			WWWInclude: false,
+			Nameserver: "a.ns14.net",
+			Action:     "COMPLETE",
+			Records:    mockZoneRecords,
+			ROID:       9149383,
 		},
 	},
 }
@@ -60,8 +60,8 @@ var mockZoneRecords = []autodns.ZoneRecord{
 	{Name: "www", Type: "A", Value: "192.168.1.2", TTL: 3600},
 	{Name: "ipv6", Type: "AAAA", Value: "2001:db8::1", TTL: 3600},
 	{Name: "mail", Type: "CNAME", Value: "mailserver.example.org", TTL: 3600},
-	{Name: "@", Type: "MX", Value: "10 mail.example.org", TTL: 3600},
-	{Name: "@", Type: "MX", Value: "20 backup.example.org", TTL: 3600},
+	{Name: "@", Type: "MX", Pref: ptr(10), Value: "mail.example.org", TTL: 3600},
+	{Name: "@", Type: "MX", Pref: ptr(20), Value: "backup.example.org", TTL: 3600},
 	{Name: "@", Type: "NS", Value: "ns1.example.org", TTL: 86400},
 	{Name: "@", Type: "NS", Value: "ns2.example.org", TTL: 86400},
 	{Name: "_sip._tcp", Type: "SRV", Value: "10 5 5060 sipserver.example.org", TTL: 3600},
@@ -80,19 +80,19 @@ var mockSearchResponse = autodns.ResponseSearch{
 			Text *string `json:"text,omitempty"`
 		}{
 			Type: "SUCCESS",
-			Code: stringPtr("S0301"),
-			Text: stringPtr("Search successful"),
+			Code: ptr("S0301"),
+			Text: ptr("Search successful"),
 		},
 	},
 	Data: []autodns.ResponseSearchItem{
 		{
-			Created:     "2023-10-18T13:56:47.000+0200",
-			Updated:     "2024-10-25T13:16:43.000+0200",
-			Origin:      "example.org",
-			NSGroup:     "ns14.net",
-			DomainSafe:  false,
-			WWWWInclude: false,
-			Nameserver:  "a.ns14.net",
+			Created:    "2023-10-18T13:56:47.000+0200",
+			Updated:    "2024-10-25T13:16:43.000+0200",
+			Origin:     "example.org",
+			NSGroup:    "ns14.net",
+			DomainSafe: false,
+			WWWInclude: false,
+			Nameserver: "a.ns14.net",
 		},
 	},
 }
@@ -152,7 +152,7 @@ var expectedZoneRecords = []autodns.ZoneRecord{
 	{Name: "test-aaaa", Type: "AAAA", Value: "2001:db8::2", TTL: 3600},
 	{Name: "test-cname", Type: "CNAME", Value: "target.example.org", TTL: 3600},
 	{Name: "test-txt", Type: "TXT", Value: "test-txt-value", TTL: 3600},
-	{Name: "test-mx", Type: "MX", Value: "10 mx.example.org", TTL: 3600},
+	{Name: "test-mx", Type: "MX", Pref: ptr(10), Value: "mx.example.org", TTL: 3600},
 	{Name: "test-ns", Type: "NS", Value: "ns.example.org", TTL: 3600},
 	{Name: "_test._tcp", Type: "SRV", Value: "10 5 443 srv.example.org", TTL: 3600},
 	{Name: "test-rr", Type: "CAA", Value: "0 issue \"example.org\"", TTL: 300},
@@ -175,14 +175,9 @@ var invalidZoneRecords = []struct {
 		error:  "invalid AAAA record value: invalid-ipv6",
 	},
 	{
-		name:   "invalid MX record format",
-		record: autodns.ZoneRecord{Name: "test", Type: "MX", Value: "invalid"},
-		error:  "invalid MX record format: invalid",
-	},
-	{
-		name:   "invalid MX preference",
-		record: autodns.ZoneRecord{Name: "test", Type: "MX", Value: "abc mx.example.org"},
-		error:  "invalid MX preference: abc",
+		name:   "MX record missing pref",
+		record: autodns.ZoneRecord{Name: "test", Type: "MX", Value: "mx.example.org"},
+		error:  `invalid MX record: missing pref for "mx.example.org"`,
 	},
 	{
 		name:   "invalid SRV record format",
@@ -207,6 +202,6 @@ var invalidZoneRecords = []struct {
 }
 
 // Helper function for creating string pointers
-func stringPtr(s string) *string {
+func ptr[V any](s V) *V {
 	return &s
 }

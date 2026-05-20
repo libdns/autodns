@@ -1,7 +1,9 @@
 package autodns
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/netip"
 	"strings"
 )
 
@@ -70,15 +72,15 @@ type ResponseZone struct {
 // }
 
 type ResponseSearchItem struct {
-	Created     string      `json:"created"`
-	Updated     string      `json:"updated"`
-	Origin      string      `json:"origin"`
-	NSGroup     string      `json:"nameServerGroup"`
-	Owner       AutoDNSUser `json:"owner"`
-	Updater     AutoDNSUser `json:"updater"`
-	DomainSafe  bool        `json:"domainsafe"`
-	WWWWInclude bool        `json:"wwwInclude"`
-	Nameserver  string      `json:"virtualNameserver"`
+	Created    string      `json:"created"`
+	Updated    string      `json:"updated"`
+	Origin     string      `json:"origin"`
+	NSGroup    string      `json:"nameServerGroup"`
+	Owner      AutoDNSUser `json:"owner"`
+	Updater    AutoDNSUser `json:"updater"`
+	DomainSafe bool        `json:"domainsafe"`
+	WWWInclude bool        `json:"wwwInclude"`
+	Nameserver string      `json:"virtualNameserver"`
 }
 
 //	{
@@ -139,6 +141,7 @@ type ZoneRecord struct {
 	Name  string `json:"name"`
 	Type  string `json:"type"`
 	Value string `json:"value"`
+	Pref  *int   `json:"pref"`
 	TTL   int    `json:"ttl"`
 }
 
@@ -165,17 +168,73 @@ type ZoneItem struct {
 		Name string `json:"name"`
 	} `json:"nameservers"`
 
-	Main struct {
-		Address string `json:"address"`
-	} `json:"main"`
+	Main ZoneItemMain `json:"main"`
 
-	WWWWInclude bool   `json:"wwwInclude"`
-	Nameserver  string `json:"virtualNameserver"`
-	Action      string `json:"action"`
+	// this enables an automatic `www` record (of type A for the domain)
+	WWWInclude bool   `json:"wwwInclude"`
+	Nameserver string `json:"virtualNameserver"`
+	Action     string `json:"action"`
 
 	Records []ZoneRecord `json:"resourceRecords"`
 
 	ROID int `json:"roid"`
+}
+
+type ZoneItemMain struct {
+	// the default IP address to be used, e.g. for an A-record for the domain)
+	Address *netip.Addr `json:"address"`
+	// the default TTL of the record
+	TTL int `json:"ttl"`
+}
+
+// Custom JSON marshaling for Main struct to handle *netip.Addr
+func (m *ZoneItem) MarshalJSON() ([]byte, error) {
+	type Alias ZoneItem
+	aux := &struct {
+		*Alias
+		Main struct {
+			Address *string `json:"address"`
+			TTL     int     `json:"ttl"`
+		} `json:"main"`
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	aux.Main.TTL = m.Main.TTL
+	if m.Main.Address != nil {
+		addr := m.Main.Address.String()
+		aux.Main.Address = &addr
+	}
+
+	return json.Marshal(aux)
+}
+
+func (m *ZoneItem) UnmarshalJSON(data []byte) error {
+	type Alias ZoneItem
+	aux := &struct {
+		*Alias
+		Main struct {
+			Address *string `json:"address"`
+			TTL     int     `json:"ttl"`
+		} `json:"main"`
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	m.Main.TTL = aux.Main.TTL
+	if aux.Main.Address != nil && *aux.Main.Address != "" {
+		addr, err := netip.ParseAddr(*aux.Main.Address)
+		if err != nil {
+			return fmt.Errorf("invalid IP address: %w", err)
+		}
+		m.Main.Address = &addr
+	}
+
+	return nil
 }
 
 type AutoDNSError struct {

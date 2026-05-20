@@ -37,19 +37,13 @@ func ToLibDNS(zr ZoneRecord) (libdns.Record, error) {
 			TTL:  time.Duration(zr.TTL) * time.Second,
 		}, nil
 	case "MX":
-		// MX record format: "priority target"
-		parts := strings.Fields(zr.Value)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid MX record format: %s", zr.Value)
-		}
-		preference, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return nil, fmt.Errorf("invalid MX preference: %s", parts[0])
+		if zr.Pref == nil {
+			return nil, fmt.Errorf("invalid MX record: missing pref for %q", zr.Value)
 		}
 		return &libdns.MX{
 			Name:       zr.Name,
-			Preference: uint16(preference),
-			Target:     parts[1],
+			Preference: uint16(*zr.Pref),
+			Target:     zr.Value,
 			TTL:        time.Duration(zr.TTL) * time.Second,
 		}, nil
 	case "NS":
@@ -124,10 +118,12 @@ func ToAutoDNS(record libdns.Record) (ZoneRecord, error) {
 			TTL:   int(r.TTL.Seconds()),
 		}, nil
 	case *libdns.MX:
+		pref := int(r.Preference)
 		return ZoneRecord{
 			Name:  r.Name,
 			Type:  "MX",
-			Value: fmt.Sprintf("%d %s", r.Preference, r.Target),
+			Value: r.Target,
+			Pref:  &pref,
 			TTL:   int(r.TTL.Seconds()),
 		}, nil
 	case *libdns.NS:
