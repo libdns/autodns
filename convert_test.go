@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/libdns/autodns"
+	"github.com/libdns/autodns/sdk"
 	"github.com/libdns/libdns"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,7 @@ func TestConversion(t *testing.T) {
 		// Use the mock zone records from fixtures
 		tests := []struct {
 			name     string
-			input    autodns.ZoneRecord
+			input    sdk.ZoneRecord
 			expected libdns.Record
 		}{
 			{

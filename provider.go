@@ -7,43 +7,40 @@ import (
 	"slices"
 	"time"
 
+	"github.com/libdns/autodns/sdk"
 	"github.com/libdns/libdns"
-)
-
-const (
-	autoDNSendpoint string = "https://api.autodns.com/v1"
-	autoDNScontext  string = "4"
 )
 
 // Provider facilitates DNS record manipulation with Autodns.
 type Provider struct {
-	Username   string       `json:"username"`
-	Password   string       `json:"password"`
-	Endpoint   string       `json:"Endpoint"`
-	Context    string       `json:"context"`
-	Primary    string       `json:"primary"`
-	HttpClient *http.Client `json:"-"`
+	Client *sdk.SDK
 }
 
 // NewWithDefaults is a convenience method to create the provider with sensible defaults.
 func NewWithDefaults(username, password string) *Provider {
 	return &Provider{
-		Username:   username,
-		Password:   password,
-		Endpoint:   autoDNSendpoint,
-		Context:    autoDNScontext,
-		HttpClient: &http.Client{},
+		Client: &sdk.SDK{
+			Username:   username,
+			Password:   password,
+			HttpClient: &http.Client{},
+		},
+	}
+}
+
+func NewWithSDK(client *sdk.SDK) *Provider {
+	return &Provider{
+		Client: client,
 	}
 }
 
 // GetRecords lists all the records in the zone.
 func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
-	zoneInfo, err := p.checkZone(ctx, zone)
+	zoneInfo, err := p.Client.CheckZone(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.getZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
+	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -113,12 +110,12 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 
 // AppendRecords adds records to the zone. It returns the records that were added.
 func (p *Provider) AppendRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	zoneInfo, err := p.checkZone(ctx, zone)
+	zoneInfo, err := p.Client.CheckZone(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.getZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
+	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +128,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 		result.Data[0].Records = append(result.Data[0].Records, zoneRecord)
 	}
 
-	if err := p.updateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
+	if err := p.Client.UpdateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
 		return nil, err
 	}
 
@@ -141,12 +138,12 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 // SetRecords sets the records in the zone, either by updating existing records or creating new ones.
 // It returns the updated records.
 func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	zoneInfo, err := p.checkZone(ctx, zone)
+	zoneInfo, err := p.Client.CheckZone(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.getZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
+	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +159,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 		// find record
 		idx := slices.IndexFunc(
 			result.Data[0].Records,
-			func(zr ZoneRecord) bool {
+			func(zr sdk.ZoneRecord) bool {
 				return zr.Name == zoneRecord.Name && zr.Type == zoneRecord.Type
 			})
 		if idx == -1 {
@@ -176,7 +173,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 		set = append(set, r)
 	}
 
-	if err := p.updateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
+	if err := p.Client.UpdateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
 		return nil, err
 	}
 
@@ -185,12 +182,12 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 
 // DeleteRecords deletes the records from the zone. It returns the records that were deleted.
 func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	zoneInfo, err := p.checkZone(ctx, zone)
+	zoneInfo, err := p.Client.CheckZone(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.getZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
+	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +203,7 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 		// find record
 		idx := slices.IndexFunc(
 			result.Data[0].Records,
-			func(zr ZoneRecord) bool {
+			func(zr sdk.ZoneRecord) bool {
 				return zr.Name == zoneRecord.Name && zr.Type == zoneRecord.Type
 			})
 		if idx == -1 {
@@ -218,8 +215,8 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 		deleted = append(deleted, r)
 	}
 
-	if err := p.updateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
-		if _, ok := err.(*AutoDNSError); ok {
+	if err := p.Client.UpdateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
+		if _, ok := err.(*sdk.AutoDNSError); ok {
 			return nil, err
 		}
 		return nil, fmt.Errorf("DeleteRecords: %v", err)

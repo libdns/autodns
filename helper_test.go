@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/libdns/autodns"
+	"github.com/libdns/autodns/sdk"
 	"github.com/libdns/libdns"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,7 @@ func TestWWWInclude(t *testing.T) {
 	content, err := os.ReadFile("./fixtures/mainWWW.json")
 	assert.NoError(t, err)
 
-	var item autodns.ZoneItem
+	var item sdk.ZoneItem
 	err = json.NewDecoder(bytes.NewBuffer(content)).Decode(&item)
 	assert.NoError(t, err)
 
@@ -26,7 +27,7 @@ func TestHasRecord(t *testing.T) {
 	content, err := os.ReadFile("./fixtures/mainWWW.json")
 	assert.NoError(t, err)
 
-	var item autodns.ZoneItem
+	var item sdk.ZoneItem
 	err = json.NewDecoder(bytes.NewBuffer(content)).Decode(&item)
 	assert.NoError(t, err)
 

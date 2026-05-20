@@ -4,38 +4,28 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/libdns/autodns"
+	"github.com/libdns/autodns/sdk"
 	"github.com/libdns/libdns"
 )
 
 // Test fixtures for AutoDNS provider testing
 
 // Mock AutoDNS API responses
-var mockZoneResponse = autodns.ResponseZone{
-	AutoDNSResponse: autodns.AutoDNSResponse{
+var mockZoneResponse = sdk.ResponseZone{
+	AutoDNSResponse: sdk.AutoDNSResponse{
 		STID: "test-stid-12345",
-		Status: struct {
-			Type string  `json:"type"`
-			Code *string `json:"code,omitempty"`
-			Text *string `json:"text,omitempty"`
-		}{
+		Status: sdk.ResponseStatus{
 			Type: "SUCCESS",
 			Code: ptr("S0301"),
 			Text: ptr("Operation successful"),
 		},
 	},
-	Data: []autodns.ZoneItem{
+	Data: []sdk.ZoneItem{
 		{
 			Created: "2023-10-18T13:56:47.000+0200",
 			Updated: "2024-10-25T13:16:43.000+0200",
 			Origin:  "example.org",
-			SOA: struct {
-				Refresh int    `json:"refresh"`
-				Retry   int    `json:"retry"`
-				Expire  int    `json:"expire"`
-				TTL     int    `json:"ttl"`
-				Email   string `json:"email"`
-			}{
+			SOA: sdk.ZoneSOA{
 				Refresh: 43200,
 				Retry:   7200,
 				Expire:  1209600,
@@ -56,7 +46,7 @@ var mockZoneResponse = autodns.ResponseZone{
 
 // Mock zone records covering all supported record types.
 // AutoDNS uses an empty Name for apex records, not "@".
-var mockZoneRecords = []autodns.ZoneRecord{
+var mockZoneRecords = []sdk.ZoneRecord{
 	{Name: "", Type: "A", Value: "192.168.1.1", TTL: 3600},
 	{Name: "www", Type: "A", Value: "192.168.1.2", TTL: 3600},
 	{Name: "ipv6", Type: "AAAA", Value: "2001:db8::1", TTL: 3600},
@@ -72,20 +62,16 @@ var mockZoneRecords = []autodns.ZoneRecord{
 }
 
 // Mock search response for zone lookup
-var mockSearchResponse = autodns.ResponseZone{
-	AutoDNSResponse: autodns.AutoDNSResponse{
+var mockSearchResponse = sdk.ResponseZone{
+	AutoDNSResponse: sdk.AutoDNSResponse{
 		STID: "test-search-stid-67890",
-		Status: struct {
-			Type string  `json:"type"`
-			Code *string `json:"code,omitempty"`
-			Text *string `json:"text,omitempty"`
-		}{
+		Status: sdk.ResponseStatus{
 			Type: "SUCCESS",
 			Code: ptr("S0301"),
 			Text: ptr("Search successful"),
 		},
 	},
-	Data: []autodns.ZoneItem{
+	Data: []sdk.ZoneItem{
 		{
 			Created:    "2023-10-18T13:56:47.000+0200",
 			Updated:    "2024-10-25T13:16:43.000+0200",
@@ -148,7 +134,7 @@ var testRecords = []libdns.Record{
 }
 
 // Expected AutoDNS ZoneRecord representations
-var expectedZoneRecords = []autodns.ZoneRecord{
+var expectedZoneRecords = []sdk.ZoneRecord{
 	{Name: "test-a", Type: "A", Value: "203.0.113.1", TTL: 3600},
 	{Name: "test-aaaa", Type: "AAAA", Value: "2001:db8::2", TTL: 3600},
 	{Name: "test-cname", Type: "CNAME", Value: "target.example.org", TTL: 3600},
@@ -162,42 +148,42 @@ var expectedZoneRecords = []autodns.ZoneRecord{
 // Test cases for record conversion errors
 var invalidZoneRecords = []struct {
 	name   string
-	record autodns.ZoneRecord
+	record sdk.ZoneRecord
 	error  string
 }{
 	{
 		name:   "invalid A record",
-		record: autodns.ZoneRecord{Name: "test", Type: "A", Value: "invalid-ip"},
+		record: sdk.ZoneRecord{Name: "test", Type: "A", Value: "invalid-ip"},
 		error:  "invalid A record value: invalid-ip",
 	},
 	{
 		name:   "invalid AAAA record",
-		record: autodns.ZoneRecord{Name: "test", Type: "AAAA", Value: "invalid-ipv6"},
+		record: sdk.ZoneRecord{Name: "test", Type: "AAAA", Value: "invalid-ipv6"},
 		error:  "invalid AAAA record value: invalid-ipv6",
 	},
 	{
 		name:   "MX record missing pref",
-		record: autodns.ZoneRecord{Name: "test", Type: "MX", Value: "mx.example.org"},
+		record: sdk.ZoneRecord{Name: "test", Type: "MX", Value: "mx.example.org"},
 		error:  `invalid MX record: missing pref for "mx.example.org"`,
 	},
 	{
 		name:   "invalid SRV record format",
-		record: autodns.ZoneRecord{Name: "test", Type: "SRV", Value: "10 5 target"},
+		record: sdk.ZoneRecord{Name: "test", Type: "SRV", Value: "10 5 target"},
 		error:  "invalid SRV record format: 10 5 target",
 	},
 	{
 		name:   "invalid SRV priority",
-		record: autodns.ZoneRecord{Name: "test", Type: "SRV", Value: "abc 5 443 target"},
+		record: sdk.ZoneRecord{Name: "test", Type: "SRV", Value: "abc 5 443 target"},
 		error:  "invalid SRV priority: abc",
 	},
 	{
 		name:   "invalid SRV weight",
-		record: autodns.ZoneRecord{Name: "test", Type: "SRV", Value: "10 abc 443 target"},
+		record: sdk.ZoneRecord{Name: "test", Type: "SRV", Value: "10 abc 443 target"},
 		error:  "invalid SRV weight: abc",
 	},
 	{
 		name:   "invalid SRV port",
-		record: autodns.ZoneRecord{Name: "test", Type: "SRV", Value: "10 5 abc target"},
+		record: sdk.ZoneRecord{Name: "test", Type: "SRV", Value: "10 5 abc target"},
 		error:  "invalid SRV port: abc",
 	},
 }
