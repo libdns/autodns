@@ -16,7 +16,7 @@ var mockZoneResponse = autodns.ResponseZone{
 		STID: "test-stid-12345",
 		Status: struct {
 			Type string  `json:"type"`
-			Code *string `json:"resultCode,omitempty"`
+			Code *string `json:"code,omitempty"`
 			Text *string `json:"text,omitempty"`
 		}{
 			Type: "SUCCESS",
@@ -76,7 +76,7 @@ var mockSearchResponse = autodns.ResponseSearch{
 		STID: "test-search-stid-67890",
 		Status: struct {
 			Type string  `json:"type"`
-			Code *string `json:"resultCode,omitempty"`
+			Code *string `json:"code,omitempty"`
 			Text *string `json:"text,omitempty"`
 		}{
 			Type: "SUCCESS",

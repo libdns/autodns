@@ -33,7 +33,7 @@ type AutoDNSResponse struct {
 
 	Status struct {
 		Type string  `json:"type"`
-		Code *string `json:"resultCode,omitempty"`
+		Code *string `json:"code,omitempty"`
 		Text *string `json:"text,omitempty"`
 	} `json:"status"`
 
@@ -80,7 +80,7 @@ type ResponseSearchItem struct {
 	Updater    AutoDNSUser `json:"updater"`
 	DomainSafe bool        `json:"domainsafe"`
 	WWWInclude bool        `json:"wwwInclude"`
-	Nameserver string      `json:"virtualNameserver"`
+	Nameserver string      `json:"virtualNameServer"`
 }
 
 //	{
@@ -141,7 +141,7 @@ type ZoneRecord struct {
 	Name  string `json:"name"`
 	Type  string `json:"type"`
 	Value string `json:"value"`
-	Pref  *int   `json:"pref"`
+	Pref  *int   `json:"pref,omitempty"`
 	TTL   int    `json:"ttl"`
 }
 
@@ -166,13 +166,13 @@ type ZoneItem struct {
 
 	Nameservers []struct {
 		Name string `json:"name"`
-	} `json:"nameservers"`
+	} `json:"nameServers"`
 
 	Main ZoneItemMain `json:"main"`
 
 	// this enables an automatic `www` record (of type A for the domain)
 	WWWInclude bool   `json:"wwwInclude"`
-	Nameserver string `json:"virtualNameserver"`
+	Nameserver string `json:"virtualNameServer"`
 	Action     string `json:"action"`
 
 	Records []ZoneRecord `json:"resourceRecords"`
