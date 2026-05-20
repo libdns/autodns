@@ -231,7 +231,7 @@ func (m *AutoDNSError) Error() string {
 	for _, m := range m.messages {
 		objects := []string{}
 		for _, o := range m.Objects {
-			objects = append(objects, "%s (type: %s)", o.Value, o.Type)
+			objects = append(objects, fmt.Sprintf("%s (type: %s)", o.Value, o.Type))
 		}
 
 		errs = append(errs, fmt.Sprintf("%s, code: %s, objects: %s",
