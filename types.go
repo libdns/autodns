@@ -17,10 +17,6 @@ type AutoDNSUser struct {
 	User    string `json:"user"`
 }
 
-type RequestZone struct {
-	Domain string `json:"domain"`
-}
-
 type AutoDNSMessage struct {
 	Text    string          `json:"text"`
 	Objects []AutoDNSObject `json:"objects"`
@@ -43,44 +39,29 @@ type AutoDNSResponse struct {
 	Messages []*AutoDNSMessage `json:"messages,omitempty"`
 }
 
-type ResponseSearch struct {
-	AutoDNSResponse
-	Data []ResponseSearchItem `json:"data"`
-}
-
+// Example payload returned for a /zone/_search hit (search results omit
+// resourceRecords and SOA; full zone fields appear via GET /zone/{name}/{ns}).
+//
+//	{
+//		"created": "2023-10-18T13:56:47.000+0200",
+//		"updated": "2024-10-25T13:16:43.000+0200",
+//		"origin": "something.example.org",
+//		"nameServerGroup": "ns14.net",
+//		"owner": {
+//		  "context": 4,
+//		  "user": "user"
+//		},
+//		"updater": {
+//		  "context": 4,
+//		  "user": "user"
+//		},
+//		"domainsafe": false,
+//		"wwwInclude": false,
+//		"virtualNameServer": "a.ns14.net"
+//	}
 type ResponseZone struct {
 	AutoDNSResponse
 	Data []ZoneItem `json:"data"`
-}
-
-// {
-// 	"created": "2023-10-18T13:56:47.000+0200",
-// 	"updated": "2024-10-25T13:16:43.000+0200",
-// 	"origin": "something.example.org",
-// 	"nameServerGroup": "ns14.net",
-// 	"owner": {
-// 	  "context": 4,
-// 	  "user": "user"
-// 	},
-// 	"updater": {
-// 	  "context": 4,
-// 	  "user": "user"
-// 	},
-// 	"domainsafe": false,
-// 	"wwwInclude": false,
-// 	"virtualNameServer": "a.ns14.net"
-// }
-
-type ResponseSearchItem struct {
-	Created    string      `json:"created"`
-	Updated    string      `json:"updated"`
-	Origin     string      `json:"origin"`
-	NSGroup    string      `json:"nameServerGroup"`
-	Owner      AutoDNSUser `json:"owner"`
-	Updater    AutoDNSUser `json:"updater"`
-	DomainSafe bool        `json:"domainsafe"`
-	WWWInclude bool        `json:"wwwInclude"`
-	Nameserver string      `json:"virtualNameServer"`
 }
 
 //	{

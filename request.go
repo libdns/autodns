@@ -83,11 +83,6 @@ func check(statusResponse, statusExpected int, result any) error {
 	}
 
 	switch rt := result.(type) {
-	case ResponseSearch:
-		if rt.Status.Type != "ERROR" {
-			return nil
-		}
-		return NewError(rt.Messages)
 	case AutoDNSResponse:
 		if rt.Status.Type != "ERROR" {
 			return nil
