@@ -110,3 +110,30 @@ func (s *SDK) UpdateZone(ctx context.Context, origin, nameserver string, zone Zo
 	}
 	return nil
 }
+
+// PatchZone applies a changeset to a zone. Unlike UpdateZone, which
+// sends the full zone, PatchZone sends only the records to add and
+// remove. The returned ResponseZone carries the zone in its updated
+// form.
+func (s *SDK) PatchZone(ctx context.Context, origin, nameserver string, patch ZonePatch) (*ResponseZone, error) {
+	req, err := s.buildRequest(ctx, http.MethodPatch, s.buildURL("zone/"+origin+"/"+nameserver), patch)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.makeRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var result ResponseZone
+	if err := s.parseResponse(resp, &result); err != nil {
+		return nil, fmt.Errorf("patchZone: %s", err)
+	}
+
+	if err := check(resp.StatusCode, 200, result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}

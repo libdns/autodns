@@ -115,20 +115,16 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 		return nil, err
 	}
 
-	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
-	if err != nil {
-		return nil, err
-	}
-
+	patch := sdk.ZonePatch{}
 	for _, r := range records {
 		zoneRecord, err := ToAutoDNS(r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert record: %v", err)
 		}
-		result.Data[0].Records = append(result.Data[0].Records, zoneRecord)
+		patch.ResourceRecordsAdd = append(patch.ResourceRecordsAdd, zoneRecord)
 	}
 
-	if err := p.Client.UpdateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
+	if _, err := p.Client.PatchZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, patch); err != nil {
 		return nil, err
 	}
 
@@ -156,11 +152,12 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 			return nil, fmt.Errorf("failed to convert record: %v", err)
 		}
 
-		// find record
+		// find record by (name, type) — wildcard on value/TTL.
+		target := sdk.ZoneRecord{Name: zoneRecord.Name, Type: zoneRecord.Type}
 		idx := slices.IndexFunc(
 			result.Data[0].Records,
 			func(zr sdk.ZoneRecord) bool {
-				return zr.Name == zoneRecord.Name && zr.Type == zoneRecord.Type
+				return MatchesZoneRecord(target, zr)
 			})
 		if idx == -1 {
 			result.Data[0].Records = append(result.Data[0].Records, zoneRecord)
@@ -180,7 +177,10 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 	return set, nil
 }
 
-// DeleteRecords deletes the records from the zone. It returns the records that were deleted.
+// DeleteRecords deletes the records from the zone. It returns the records
+// that were deleted. Per the libdns contract, records that don't exist
+// are silently ignored, matching is exact on Name+Type+TTL+Value, and
+// empty Type/TTL/Value act as wildcards.
 func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
 	zoneInfo, err := p.Client.CheckZone(ctx, zone)
 	if err != nil {
@@ -192,36 +192,39 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 		return nil, err
 	}
 
-	var deleted []libdns.Record
-
+	targets := make([]sdk.ZoneRecord, 0, len(records))
 	for _, r := range records {
 		zoneRecord, err := ToAutoDNS(r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert record: %v", err)
 		}
+		targets = append(targets, zoneRecord)
+	}
 
-		// find record
-		idx := slices.IndexFunc(
-			result.Data[0].Records,
-			func(zr sdk.ZoneRecord) bool {
-				return zr.Name == zoneRecord.Name && zr.Type == zoneRecord.Type
-			})
-		if idx == -1 {
+	patch := sdk.ZonePatch{}
+	var deleted []libdns.Record
+
+	for _, zr := range result.Data[0].Records {
+		if !slices.ContainsFunc(targets, func(t sdk.ZoneRecord) bool {
+			return MatchesZoneRecord(t, zr)
+		}) {
 			continue
 		}
-
-		// remove
-		result.Data[0].Records = append(result.Data[0].Records[:idx], result.Data[0].Records[idx+1:]...)
-		deleted = append(deleted, r)
-	}
-
-	if err := p.Client.UpdateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
-		if _, ok := err.(*sdk.AutoDNSError); ok {
-			return nil, err
+		libRec, err := ToLibDNS(zr)
+		if err != nil {
+			continue
 		}
-		return nil, fmt.Errorf("DeleteRecords: %v", err)
+		patch.ResourceRecordsRem = append(patch.ResourceRecordsRem, zr)
+		deleted = append(deleted, libRec)
 	}
 
+	if len(patch.ResourceRecordsRem) == 0 {
+		return deleted, nil
+	}
+
+	if _, err := p.Client.PatchZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, patch); err != nil {
+		return nil, err
+	}
 	return deleted, nil
 }
 

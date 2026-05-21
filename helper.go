@@ -20,3 +20,22 @@ func HasWWWInclude(zone sdk.ZoneItem) bool {
 	}
 	return false
 }
+
+// MatchesZoneRecord reports whether zr matches target using libdns's
+// wildcard rules: Name must match exactly; empty Type/TTL/Value in
+// target act as wildcards.
+func MatchesZoneRecord(target, zr sdk.ZoneRecord) bool {
+	if zr.Name != target.Name {
+		return false
+	}
+	if target.Type != "" && zr.Type != target.Type {
+		return false
+	}
+	if target.Value != "" && zr.Value != target.Value {
+		return false
+	}
+	if target.TTL != 0 && zr.TTL != target.TTL {
+		return false
+	}
+	return true
+}
