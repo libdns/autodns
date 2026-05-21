@@ -13,6 +13,7 @@ import (
 	"github.com/libdns/autodns"
 	"github.com/libdns/autodns/sdk"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProvider(t *testing.T) {
@@ -23,7 +24,7 @@ func TestProvider(t *testing.T) {
 
 	provider := autodns.NewWithDefaults(os.Getenv("AUTODNS_USERNAME"), os.Getenv("AUTODNS_PASSWORD"))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*10)
 	defer cancel()
 
 	t.Run("GetRecords", func(t *testing.T) {
@@ -73,6 +74,6 @@ func TestGetRecords(t *testing.T) {
 	)
 
 	records, err := provider.GetRecords(context.TODO(), "example.org")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, records)
 }

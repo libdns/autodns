@@ -10,26 +10,25 @@ import (
 	"github.com/libdns/autodns/sdk"
 	"github.com/libdns/libdns"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWWWInclude(t *testing.T) {
 	content, err := os.ReadFile("./fixtures/mainWWW.json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var item sdk.ZoneItem
-	err = json.NewDecoder(bytes.NewBuffer(content)).Decode(&item)
-	assert.NoError(t, err)
+	require.NoError(t, json.NewDecoder(bytes.NewBuffer(content)).Decode(&item))
 
 	assert.True(t, autodns.HasWWWInclude(item))
 }
 
 func TestHasRecord(t *testing.T) {
 	content, err := os.ReadFile("./fixtures/mainWWW.json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var item sdk.ZoneItem
-	err = json.NewDecoder(bytes.NewBuffer(content)).Decode(&item)
-	assert.NoError(t, err)
+	require.NoError(t, json.NewDecoder(bytes.NewBuffer(content)).Decode(&item))
 
 	// convert
 	var records []libdns.Record
