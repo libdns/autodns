@@ -8,11 +8,12 @@ This package implements the [libdns interfaces](https://github.com/libdns/libdns
 
 Example:
 
-```
+```go
 package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"log"
 
@@ -20,10 +21,7 @@ import (
 )
 
 func main() {
-	provider := autodns.Provider{
-		Username: os.Getenv("AUTODNS_USERNAME"),
-		Password: os.Getenv("AUTODNS_PASSWORD"),
-	}
+	provider := autodns.NewWithDefaults(os.Getenv("AUTODNS_USERNAME"), os.Getenv("AUTODNS_PASSWORD"))
 
 	records, err := provider.GetRecords(context.TODO(), "zone.example.org")
 	if err != nil {
@@ -34,12 +32,35 @@ func main() {
 }
 ```
 
-As an alternative, configure the provider struct with the following:
+As an alternative, configure the [SDK](https://pkg.go.dev/github.com/libdns/autodns/sdk) struct with the following:
 
 | Field      | Description (default)      | Required |
 |------------|----------------------------|----------|
-| Username   | username, empty            | yes      |
-| Password   | password, empty            | yes      |
-| Endpoint   | https://api.autodns.com/v1 | no       |
-| Context    | 4                          | no       |
-| HttpClient | `&http.Client{}`           | no       |
+| Username   | username, empty            | yes      |
+| Password   | password, empty            | yes      |
+| Endpoint   | https://api.autodns.com/v1 | no       |
+| Context    | 4                          | no       |
+| HttpClient | `&http.Client{}`           | no       |
+
+```go
+package main
+
+import (
+	"context"
+	"os"
+	"log"
+
+	"github.com/libdns/autodns"
+	"github.com/libdns/autodns/sdk"
+)
+
+func main() {
+	provider := autodns.NewWithSDK(&sdk.SDK{
+		Username: os.Getenv("AUTODNS_USERNAME"),
+		Password: os.Getenv("AUTODNS_PASSWORD"),
+		Context:  "123",
+	})
+
+	// use the provider
+}
+```

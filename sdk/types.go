@@ -147,13 +147,22 @@ type ResponseZone struct {
 
 // ZoneRecord is a single DNS resource record stored inside a zone. Pref
 // is only meaningful for record types that carry a preference (MX); it
-// is nil for everything else.
+// is nil for everything else. TTL of 0 is omitted on the wire so the
+// zone's SOA TTL applies.
 type ZoneRecord struct {
 	Name  string `json:"name"`
 	Type  string `json:"type"`
 	Value string `json:"value"`
 	Pref  *int   `json:"pref,omitempty"`
-	TTL   int    `json:"ttl"`
+	TTL   int    `json:"ttl,omitempty"`
+}
+
+// ZonePatch is the body of PATCH /zone/{origin}/{nameserver}. Only the
+// changeset is sent: records in ResourceRecordsAdd are added to the
+// zone, records in ResourceRecordsRem are removed.
+type ZonePatch struct {
+	ResourceRecordsAdd []ZoneRecord `json:"resourceRecordsAdd,omitempty"`
+	ResourceRecordsRem []ZoneRecord `json:"resourceRecordsRem,omitempty"`
 }
 
 // ZoneSOA is the SOA block on a ZoneItem.
