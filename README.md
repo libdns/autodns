@@ -32,7 +32,9 @@ func main() {
 }
 ```
 
-As an alternative, configure the [SDK](https://pkg.go.dev/github.com/libdns/autodns/sdk) struct with the following:
+## Customize
+
+To customize the connection further (e.g. when using a sub account of another account), configure the [SDK](https://pkg.go.dev/github.com/libdns/autodns/sdk) struct with the following:
 
 | Field      | Description (default)      | Required |
 |------------|----------------------------|----------|
@@ -63,4 +65,19 @@ func main() {
 
 	// use the provider
 }
+```
+
+## Shortcut
+
+By default, the library will try to resolve the zone name and the primary nameserver which are needed for requests against the API. When working with a single zone, you can configure these yourself and skip the extra requests:
+
+```go
+var(
+	zone = "example.org"
+	nameServer = "ns1.autodns.eu"
+)
+
+provider := autodns.NewWithDefaults(os.Getenv("AUTODNS_USERNAME"), os.Getenv("AUTODNS_PASSWORD"))
+provider.Zone = &zone
+provider.Nameserver = &nameServer
 ```

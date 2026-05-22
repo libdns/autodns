@@ -11,9 +11,13 @@ import (
 	"github.com/libdns/libdns"
 )
 
-// Provider facilitates DNS record manipulation with Autodns.
+// Provider facilitates DNS record manipulation with AutoDNS.
 type Provider struct {
 	Client *sdk.SDK
+
+	// Optional fields to skip zone lookup if already known
+	Zone       *string `json:"origin,omitempty"`
+	Nameserver *string `json:"nameserver,omitempty"`
 }
 
 // NewWithDefaults is a convenience method to create the provider with sensible defaults.
@@ -33,14 +37,32 @@ func NewWithSDK(client *sdk.SDK) *Provider {
 	}
 }
 
+// getZoneInfo returns the origin and nameserver needed for API calls.
+// If Zone and Nameserver are set on the provider, it uses those.
+// Otherwise, it performs a zone lookup via p.Client.CheckZone.
+func (p *Provider) getZoneInfo(ctx context.Context, zone string) (origin, nameserver string, err error) {
+	// Use configured values if both are provided
+	if p.Zone != nil && p.Nameserver != nil {
+		return *p.Zone, *p.Nameserver, nil
+	}
+
+	// Otherwise, perform lookup
+	zoneInfo, err := p.Client.CheckZone(ctx, zone)
+	if err != nil {
+		return "", "", err
+	}
+
+	return zoneInfo.Origin, zoneInfo.Nameserver, nil
+}
+
 // GetRecords lists all the records in the zone.
 func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
-	zoneInfo, err := p.Client.CheckZone(ctx, zone)
+	origin, nameserver, err := p.getZoneInfo(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
+	result, err := p.Client.GetZone(ctx, origin, nameserver, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +132,7 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 
 // AppendRecords adds records to the zone. It returns the records that were added.
 func (p *Provider) AppendRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	zoneInfo, err := p.Client.CheckZone(ctx, zone)
+	origin, nameserver, err := p.getZoneInfo(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +146,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 		patch.ResourceRecordsAdd = append(patch.ResourceRecordsAdd, zoneRecord)
 	}
 
-	if _, err := p.Client.PatchZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, patch); err != nil {
+	if _, err := p.Client.PatchZone(ctx, origin, nameserver, patch); err != nil {
 		return nil, err
 	}
 
@@ -134,12 +156,12 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 // SetRecords sets the records in the zone, either by updating existing records or creating new ones.
 // It returns the updated records.
 func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	zoneInfo, err := p.Client.CheckZone(ctx, zone)
+	origin, nameserver, err := p.getZoneInfo(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
+	result, err := p.Client.GetZone(ctx, origin, nameserver, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +192,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 		set = append(set, r)
 	}
 
-	if err := p.Client.UpdateZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, result.Data[0]); err != nil {
+	if err := p.Client.UpdateZone(ctx, origin, nameserver, result.Data[0]); err != nil {
 		return nil, err
 	}
 
@@ -182,12 +204,12 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 // are silently ignored, matching is exact on Name+Type+TTL+Value, and
 // empty Type/TTL/Value act as wildcards.
 func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	zoneInfo, err := p.Client.CheckZone(ctx, zone)
+	origin, nameserver, err := p.getZoneInfo(ctx, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := p.Client.GetZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, zone)
+	result, err := p.Client.GetZone(ctx, origin, nameserver, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +244,7 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 		return deleted, nil
 	}
 
-	if _, err := p.Client.PatchZone(ctx, zoneInfo.Origin, zoneInfo.Nameserver, patch); err != nil {
+	if _, err := p.Client.PatchZone(ctx, origin, nameserver, patch); err != nil {
 		return nil, err
 	}
 	return deleted, nil
